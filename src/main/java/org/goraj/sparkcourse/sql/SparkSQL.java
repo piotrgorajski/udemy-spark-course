@@ -20,26 +20,25 @@ public class SparkSQL {
      */
     public static void main(String[] args) {
         // Use new SparkSession interface in Spark 2.0
-        SparkSession sparkSession = SparkSession
+        try (SparkSession sparkSession = SparkSession
                 .builder()
                 .appName("SparkSQL")
                 .master("local[*]")
-                .getOrCreate();
+                .getOrCreate()) {
 
-        Encoder<Person> personEncoder = Encoders.bean(Person.class);
-        Dataset<Person> schemaPeople = sparkSession.sqlContext().read().textFile("src/main/resources/fakefriends.csv").map(lineToPerson, personEncoder);
+            Encoder<Person> personEncoder = Encoders.bean(Person.class);
+            Dataset<Person> schemaPeople = sparkSession.sqlContext().read().textFile("src/main/resources/fakefriends.csv").map(lineToPerson, personEncoder);
 
-        schemaPeople.printSchema();
+            schemaPeople.printSchema();
 
-        schemaPeople.createOrReplaceTempView("people");
+            schemaPeople.createOrReplaceTempView("people");
 
-        // SQL can be run over DataFrames that have been registered as a table
-        Dataset<Person> teenagers = sparkSession.sql("SELECT * FROM people WHERE age >= 13 AND age <= 19").as(personEncoder);
+            // SQL can be run over DataFrames that have been registered as a table
+            Dataset<Person> teenagers = sparkSession.sql("SELECT * FROM people WHERE age >= 13 AND age <= 19").as(personEncoder);
 
-        List<Person> results = teenagers.collectAsList();
+            List<Person> results = teenagers.collectAsList();
 
-        results.forEach(System.out::println);
-
-        sparkSession.stop();
+            results.forEach(System.out::println);
+        }
     }
 }
